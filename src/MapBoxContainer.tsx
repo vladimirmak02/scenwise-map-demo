@@ -1,5 +1,6 @@
 import React, { useRef, useEffect } from "react";
-import mapboxgl from "mapbox-gl"; // eslint-disable-line import/no-webpack-loader-syntax
+// @ts-ignore
+import mapboxgl from "!mapbox-gl"; // eslint-disable-line import/no-webpack-loader-syntax
 import axios from "./Api";
 import "mapbox-gl/dist/mapbox-gl.css";
 import cameraSVG from "./videocamera.svg";
@@ -39,7 +40,7 @@ export default function MapBoxContainer() {
               "Content-Type": "application/json",
             },
             params: {
-              ID: 12345,
+              //   ID: 12345,
             },
           }
         )
