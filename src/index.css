@@ -16,7 +16,8 @@ code {
   height: 800px;
 }
 
-.mapboxgl-popup {
-  max-width: 400px;
+.mapboxgl-popup,
+.mapboxgl-popup-content {
+  max-width: 600px !important;
   font: 12px/20px "Helvetica Neue", Arial, Helvetica, sans-serif;
 }
