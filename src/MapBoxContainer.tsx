@@ -4,8 +4,14 @@ import mapboxgl from "!mapbox-gl"; // eslint-disable-line import/no-webpack-load
 import axios from "./Api";
 import "mapbox-gl/dist/mapbox-gl.css";
 import cameraSVG from "./videocamera.svg";
+import camera2SVG from "./videocamera2.svg";
 import ReactDOM from "react-dom";
-import { BusyHoursHeatmap, WindyWebcam } from "./HelperComponents";
+import {
+  BusyHoursHeatmap,
+  WindyWebcam,
+  YoutubeWebcamEmbed,
+  youtubeWebcamInfo,
+} from "./HelperComponents";
 
 mapboxgl.accessToken =
   "pk.eyJ1IjoidHVkdGltMjEiLCJhIjoiY2tvYWQwczczMTJ6NTJwbXUydmVvbXFsZCJ9.ixIsrkMIvzJuWoGSMTKZmw";
@@ -25,11 +31,17 @@ export default function MapBoxContainer() {
     });
 
     map.on("load", () => {
-      let img = new Image(20, 20);
+      let img = new Image(20, 20); //Camera Purple
       img.onload = () => {
         map.addImage("camera", img);
       };
       img.src = cameraSVG;
+
+      let img2 = new Image(20, 20); //Camera Purple
+      img2.onload = () => {
+        map.addImage("camera2", img2);
+      };
+      img2.src = camera2SVG;
 
       function renderMapWebcams(response) {
         map.addSource("places", {
@@ -39,29 +51,31 @@ export default function MapBoxContainer() {
           type: "geojson",
           data: {
             type: "FeatureCollection",
-            features: response.data.result.webcams.map((webcam) => {
-              return {
-                type: "Feature",
-                properties: {
-                  href: webcam.url.current.desktop,
-                  // src: webcam.image.current.thumbnail,
-                  src: webcam.player.day.embed,
-                  description: "Location: ".concat(
-                    webcam.location.city,
-                    ", ",
-                    webcam.location.country
-                  ),
-                  icon: "camera",
-                },
-                geometry: {
-                  type: "Point",
-                  coordinates: [
-                    webcam.location.longitude,
-                    webcam.location.latitude,
-                  ],
-                },
-              };
-            }),
+            features: response.data.result.webcams
+              .map((webcam) => {
+                return {
+                  type: "Feature",
+                  properties: {
+                    href: webcam.url.current.desktop,
+                    // src: webcam.image.current.thumbnail,
+                    src: webcam.player.day.embed,
+                    description: "Location: ".concat(
+                      webcam.location.city,
+                      ", ",
+                      webcam.location.country
+                    ),
+                    icon: "camera",
+                  },
+                  geometry: {
+                    type: "Point",
+                    coordinates: [
+                      webcam.location.longitude,
+                      webcam.location.latitude,
+                    ],
+                  },
+                };
+              })
+              .concat(youtubeWebcamInfo),
           },
         });
 
@@ -88,11 +102,19 @@ export default function MapBoxContainer() {
 
           const holder = document.createElement("div");
           ReactDOM.render(
-            <WindyWebcam
-              href={content.href}
-              src={content.src}
-              description={content.description}
-            />,
+            content.embedID ? (
+              <YoutubeWebcamEmbed
+                embedId={content.embedID}
+                href={content.href}
+                description={content.description}
+              />
+            ) : (
+              <WindyWebcam
+                href={content.href}
+                src={content.src}
+                description={content.description}
+              />
+            ),
             holder
           );
 
@@ -178,75 +200,78 @@ export default function MapBoxContainer() {
           },
         });
 
-        map.addLayer({
-          id: "busyhours-heat",
-          type: "heatmap",
-          source: "busyhours",
-          maxzoom: circleZoomLevel + 1,
-          paint: {
-            // Increase the heatmap weight based on frequency and property magnitude
-            "heatmap-weight": [
-              "interpolate",
-              ["linear"],
-              ["get", "busy"],
-              0,
-              0,
-              100,
-              1,
-            ],
-            // Increase the heatmap color weight weight by zoom level
-            // heatmap-intensity is a multiplier on top of heatmap-weight
-            "heatmap-intensity": [
-              "interpolate",
-              ["linear"],
-              ["zoom"],
-              0,
-              1,
-              circleZoomLevel + 1,
-              3,
-            ],
-            // Color ramp for heatmap.  Domain is 0 (low) to 1 (high).
-            // Begin color ramp at 0-stop with a 0-transparancy color
-            // to create a blur-like effect.
-            //   "heatmap-color": [
-            //     "interpolate",
-            //     ["linear"],
-            //     ["heatmap-density"],
-            //     0,
-            //     "rgba(33,102,172,0)",
-            //     0.2,
-            //     "rgb(103,169,207)",
-            //     0.4,
-            //     "rgb(209,229,240)",
-            //     0.6,
-            //     "rgb(253,219,199)",
-            //     0.8,
-            //     "rgb(239,138,98)",
-            //     1,
-            //     "rgb(178,24,43)",
-            //   ],
-            // Adjust the heatmap radius by zoom level
-            "heatmap-radius": [
-              "interpolate",
-              ["linear"],
-              ["zoom"],
-              0,
-              2,
-              circleZoomLevel,
-              20,
-            ],
-            // Transition from heatmap to circle layer by zoom level
-            "heatmap-opacity": [
-              "interpolate",
-              ["linear"],
-              ["zoom"],
-              circleZoomLevel,
-              1,
-              circleZoomLevel + 1,
-              0,
-            ],
+        map.addLayer(
+          {
+            id: "busyhours-heat",
+            type: "heatmap",
+            source: "busyhours",
+            maxzoom: circleZoomLevel + 1,
+            paint: {
+              // Increase the heatmap weight based on frequency and property magnitude
+              "heatmap-weight": [
+                "interpolate",
+                ["linear"],
+                ["get", "busy"],
+                0,
+                0,
+                100,
+                1,
+              ],
+              // Increase the heatmap color weight weight by zoom level
+              // heatmap-intensity is a multiplier on top of heatmap-weight
+              "heatmap-intensity": [
+                "interpolate",
+                ["linear"],
+                ["zoom"],
+                0,
+                1,
+                circleZoomLevel + 1,
+                3,
+              ],
+              // Color ramp for heatmap.  Domain is 0 (low) to 1 (high).
+              // Begin color ramp at 0-stop with a 0-transparancy color
+              // to create a blur-like effect.
+              //   "heatmap-color": [
+              //     "interpolate",
+              //     ["linear"],
+              //     ["heatmap-density"],
+              //     0,
+              //     "rgba(33,102,172,0)",
+              //     0.2,
+              //     "rgb(103,169,207)",
+              //     0.4,
+              //     "rgb(209,229,240)",
+              //     0.6,
+              //     "rgb(253,219,199)",
+              //     0.8,
+              //     "rgb(239,138,98)",
+              //     1,
+              //     "rgb(178,24,43)",
+              //   ],
+              // Adjust the heatmap radius by zoom level
+              "heatmap-radius": [
+                "interpolate",
+                ["linear"],
+                ["zoom"],
+                0,
+                2,
+                circleZoomLevel,
+                20,
+              ],
+              // Transition from heatmap to circle layer by zoom level
+              "heatmap-opacity": [
+                "interpolate",
+                ["linear"],
+                ["zoom"],
+                circleZoomLevel,
+                1,
+                circleZoomLevel + 1,
+                0,
+              ],
+            },
           },
-        });
+          "places"
+        );
 
         map.addLayer(
           {

@@ -1,6 +1,88 @@
-import { ApexOptions } from "apexcharts";
-import { Component, useEffect, useRef, useState } from "react";
+import { Component, useState } from "react";
 import Chart from "react-apexcharts";
+
+export const youtubeWebcamInfo = [
+  {
+    type: "Feature",
+    properties: {
+      href: "https://www.youtube.com/watch?v=yST7Ux0ypUM",
+      // embedID: the embed ID of the YT stream
+      embedID: "yST7Ux0ypUM",
+      description: "Location: ".concat(
+        "Amsterdam", //City - Dam Amsterdam
+        ", Netherlands"
+      ),
+      icon: "camera2",
+    },
+    geometry: {
+      type: "Point",
+      coordinates: [
+        "4.893240", //long
+        "52.373001", //lat
+      ],
+    },
+  },
+  {
+    type: "Feature",
+    properties: {
+      href: "https://www.youtube.com/watch?v=LwH8kEj8QCA",
+      // embedID: the embed ID of the YT stream
+      embedID: "LwH8kEj8QCA",
+      description: "Location: ".concat(
+        "Zandvoort", //City
+        ", Netherlands"
+      ),
+      icon: "camera2",
+    },
+    geometry: {
+      type: "Point",
+      coordinates: [
+        "4.537590", //long
+        "52.379640", //lat
+      ],
+    },
+  },
+  {
+    type: "Feature",
+    properties: {
+      href: "https://www.youtube.com/watch?v=nmRRzgVUeoY",
+      // embedID: the embed ID of the YT stream
+      embedID: "nmRRzgVUeoY",
+      description: "Location: ".concat(
+        "Zandvoort", //City
+        ", Netherlands"
+      ),
+      icon: "camera2",
+    },
+    geometry: {
+      type: "Point",
+      coordinates: [
+        "4.5273356937502856", //long
+        "52.37737804091559", //lat
+      ],
+    },
+  },
+  //   {
+  //     type: "Feature",
+  //     properties: {
+  //       href: "",
+  //       // embedID: the embed ID of the YT stream
+  //       embedID: "",
+  //       description: "Location: ".concat(
+  //         "", //City
+  //         ", Netherlands"
+  //       ),
+  //       icon: "camera2",
+  //     },
+  //     geometry: {
+  //       type: "Point",
+  //       coordinates: [
+  //         "", //long
+  //         "", //lat
+  //       ],
+  //     },
+  //   },
+];
 
 export const WindyWebcam = (props) => {
   const [isLoaded, setisLoaded] = useState(false);
@@ -11,12 +93,45 @@ export const WindyWebcam = (props) => {
         title="A view from the webcam"
         src={props.src}
         onLoad={() => setisLoaded(true)}
+        width={450}
+        height={253}
+        allowFullScreen
       ></iframe>
       {!isLoaded ? (
         <div>
           Loading{" "}
           <a href={props.href} target="_blank" rel="noreferrer">
             Windy.com
+          </a>
+          ...
+        </div>
+      ) : (
+        <div>{props.description}</div>
+      )}
+    </div>
+  );
+};
+
+export const YoutubeWebcamEmbed = (props) => {
+  const [isLoaded, setisLoaded] = useState(false);
+
+  return (
+    <div>
+      <iframe
+        width={450}
+        height={253}
+        onLoad={() => setisLoaded(true)}
+        src={`https://www.youtube.com/embed/${props.embedId}?autoplay=1`}
+        frameBorder="0"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allowFullScreen
+        title="Youtube Webcam"
+      />
+      {!isLoaded ? (
+        <div>
+          Loading{" "}
+          <a href={props.href} target="_blank" rel="noreferrer">
+            Youtube.com
           </a>
           ...
         </div>
