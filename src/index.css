@@ -21,3 +21,8 @@ code {
   max-width: 600px !important;
   font: 12px/20px "Helvetica Neue", Arial, Helvetica, sans-serif;
 }
+
+.apexcharts-yaxis {
+  max-width: 7em;
+  width: 6em;
+}
