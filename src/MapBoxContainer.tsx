@@ -7,6 +7,7 @@ import cameraSVG from "./videocamera.svg";
 import camera2SVG from "./videocamera2.svg";
 import ReactDOM from "react-dom";
 import {
+  BusyHoursDayChart,
   BusyHoursHeatmap,
   WindyWebcam,
   YoutubeWebcamEmbed,
@@ -163,12 +164,12 @@ export default function MapBoxContainer() {
 
       function renderMapBusy(responses) {
         let features = [];
+        const curr = new Date();
         for (let i = 0; i < responses.length; i += 2) {
           const venue = responses[i].data;
           const weekResponse = responses[i + 1].data;
           const week = responses[i + 1].data.analysis.week_raw;
 
-          const curr = new Date();
           const currentDay = (curr.getDay() + 6) % 7;
 
           const currentHour = (curr.getHours() + 24 - 6) % 24;
@@ -330,6 +331,7 @@ export default function MapBoxContainer() {
           var content = e.features[0].properties;
           const week: [any] = JSON.parse(content.week);
           let hourcount = 0;
+          const currentDay = week[(curr.getDay() + 6) % 7];
           const series = week.map((day) => {
             return {
               name: day.day_info.day_text,
@@ -343,8 +345,6 @@ export default function MapBoxContainer() {
             };
           });
 
-          console.log(series, week);
-
           // Ensure that if the map is zoomed out such that multiple
           // copies of the feature are visible, the popup appears
           // over the copy being pointed to.
@@ -353,9 +353,23 @@ export default function MapBoxContainer() {
           }
 
           const holder = document.createElement("div");
+          holder.className = "busyhourscontainer";
           ReactDOM.render(
-            <div style={{ width: 600, height: 300, maxHeight: 300 }}>
+            <div style={{ width: 600, height: 300, maxHeight: 800 }}>
               <h4>{"Location: " + content.name}</h4>
+              <BusyHoursDayChart
+                series={[
+                  {
+                    data: currentDay.day_raw.map((hour: number, index) => {
+                      return {
+                        x: index + 1,
+                        y: hour,
+                      };
+                    }),
+                    name: currentDay.day_info.day_text,
+                  },
+                ]}
+              />
               <BusyHoursHeatmap series={series} />
 
               {/* <p>{"Last updated on: " + content.lastUpdate}</p> */}
@@ -419,7 +433,6 @@ export default function MapBoxContainer() {
         Promise.all(venueRequests)
           .then(function (responses) {
             localStorage.setItem("venues", JSON.stringify(responses));
-            console.log(responses);
 
             renderMapBusy(responses);
           })

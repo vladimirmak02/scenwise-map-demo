@@ -1,89 +1,6 @@
 import { Component, useState } from "react";
 import Chart from "react-apexcharts";
 
-export const youtubeWebcamInfo = [
-  {
-    type: "Feature",
-    properties: {
-      href: "https://www.youtube.com/watch?v=yST7Ux0ypUM",
-      // embedID: the embed ID of the YT stream
-      embedID: "yST7Ux0ypUM",
-      description: "Location: ".concat(
-        "Amsterdam", //City - Dam Amsterdam
-        ", Netherlands"
-      ),
-      icon: "camera2",
-    },
-    geometry: {
-      type: "Point",
-      coordinates: [
-        "4.893240", //long
-        "52.373001", //lat
-      ],
-    },
-  },
-  {
-    type: "Feature",
-    properties: {
-      href: "https://www.youtube.com/watch?v=LwH8kEj8QCA",
-      // embedID: the embed ID of the YT stream
-      embedID: "LwH8kEj8QCA",
-      description: "Location: ".concat(
-        "Zandvoort", //City
-        ", Netherlands"
-      ),
-      icon: "camera2",
-    },
-    geometry: {
-      type: "Point",
-      coordinates: [
-        "4.537590", //long
-        "52.379640", //lat
-      ],
-    },
-  },
-  {
-    type: "Feature",
-    properties: {
-      href: "https://www.youtube.com/watch?v=nmRRzgVUeoY",
-      // embedID: the embed ID of the YT stream
-      embedID: "nmRRzgVUeoY",
-      description: "Location: ".concat(
-        "Zandvoort", //City
-        ", Netherlands"
-      ),
-      icon: "camera2",
-    },
-    geometry: {
-      type: "Point",
-      coordinates: [
-        "4.5273356937502856", //long
-        "52.37737804091559", //lat
-      ],
-    },
-  },
-  //   {
-  //     type: "Feature",
-  //     properties: {
-  //       href: "",
-  //       // embedID: the embed ID of the YT stream
-  //       embedID: "",
-  //       description: "Location: ".concat(
-  //         "", //City
-  //         ", Netherlands"
-  //       ),
-  //       icon: "camera2",
-  //     },
-  //     geometry: {
-  //       type: "Point",
-  //       coordinates: [
-  //         "", //long
-  //         "", //lat
-  //       ],
-  //     },
-  //   },
-];
-
 export const WindyWebcam = (props) => {
   const [isLoaded, setisLoaded] = useState(false);
 
@@ -217,3 +134,224 @@ export class BusyHoursHeatmap extends Component<any, any> {
     );
   }
 }
+
+export class BusyHoursDayChart extends Component<any, any> {
+  constructor(props) {
+    super(props);
+    this.state = {
+      liveDataShown: false,
+      options: {
+        chart: {
+          type: "bar",
+          toolbar: {
+            show: false,
+          },
+          redrawOnParentResize: true,
+        },
+        xaxis: {
+          categories: [
+            "6:00 AM",
+            "7:00 AM",
+            "8:00 AM",
+            "9:00 AM",
+            "10:00 AM",
+            "11:00 AM",
+            "12:00 PM",
+            "1:00 PM",
+            "2:00 PM",
+            "3:00 PM",
+            "4:00 PM",
+            "5:00 PM",
+            "6:00 PM",
+            "7:00 PM",
+            "8:00 PM",
+            "9:00 PM",
+            "10:00 PM",
+            "11:00 PM",
+            "00:00 AM",
+            "1:00 AM",
+            "2:00 AM",
+            "3:00 AM",
+            "4:00 AM",
+            "5:00 AM",
+          ],
+          tickPlacement: "on",
+        },
+        yaxis: {
+          title: {
+            text: "Busyness on " + props.series[0].name,
+          },
+        },
+        plotOptions: {
+          bar: {
+            columnWidth: "60%",
+          },
+        },
+        colors: ["#7BAAF7"],
+        dataLabels: {
+          enabled: false,
+        },
+        legend: {
+          show: true,
+          showForSingleSeries: true,
+          customLegendItems: ["Predicted", "Live"],
+          markers: {
+            fillColors: ["#7BAAF7", "#f50057"],
+          },
+        },
+      },
+      series: props.series,
+    };
+    console.log(props.series);
+  }
+
+  componentDidMount() {}
+
+  addLiveData() {
+    this.setState({ liveDataShown: true });
+    // get the live data
+    this.setState((prevSeries) => {
+      let newseries = prevSeries.series.map((series) => {
+        return {
+          ...series,
+          data: series.data.map((hour, index) => {
+            if (index === 2) {
+              //live hour
+              return {
+                ...hour,
+                goals: [
+                  {
+                    name: "Live",
+                    value: 50,
+                    strokeWidth: 5,
+                    strokeColor: "#f50057",
+                  },
+                ],
+              };
+            } else {
+              return {
+                ...hour,
+              };
+            }
+          }),
+        };
+      });
+      console.log(newseries);
+
+      //   }).data[1].goals = [
+      //     {
+      //       name: "Live",
+      //       value: 50,
+      //       strokeWidth: 5,
+      //       strokeColor: "#f50057",
+      //     },
+      //   ];
+
+      return { series: newseries };
+    });
+    // console.log(this.state.series);
+  }
+
+  render() {
+    return (
+      <div>
+        <Chart
+          options={this.state.options}
+          series={this.state.series}
+          type="bar"
+          height="300"
+        />
+        {this.state.liveDataShown ? (
+          ""
+        ) : (
+          <button onClick={this.addLiveData.bind(this)}>
+            Add LIVE data to chart
+          </button>
+        )}
+      </div>
+    );
+  }
+}
+
+export const youtubeWebcamInfo = [
+  {
+    type: "Feature",
+    properties: {
+      href: "https://www.youtube.com/watch?v=yST7Ux0ypUM",
+      // embedID: the embed ID of the YT stream
+      embedID: "yST7Ux0ypUM",
+      description: "Location: ".concat(
+        "Amsterdam", //City - Dam Amsterdam
+        ", Netherlands"
+      ),
+      icon: "camera2",
+    },
+    geometry: {
+      type: "Point",
+      coordinates: [
+        "4.893240", //long
+        "52.373001", //lat
+      ],
+    },
+  },
+  {
+    type: "Feature",
+    properties: {
+      href: "https://www.youtube.com/watch?v=LwH8kEj8QCA",
+      // embedID: the embed ID of the YT stream
+      embedID: "LwH8kEj8QCA",
+      description: "Location: ".concat(
+        "Zandvoort", //City
+        ", Netherlands"
+      ),
+      icon: "camera2",
+    },
+    geometry: {
+      type: "Point",
+      coordinates: [
+        "4.537590", //long
+        "52.379640", //lat
+      ],
+    },
+  },
+  {
+    type: "Feature",
+    properties: {
+      href: "https://www.youtube.com/watch?v=nmRRzgVUeoY",
+      // embedID: the embed ID of the YT stream
+      embedID: "nmRRzgVUeoY",
+      description: "Location: ".concat(
+        "Zandvoort", //City
+        ", Netherlands"
+      ),
+      icon: "camera2",
+    },
+    geometry: {
+      type: "Point",
+      coordinates: [
+        "4.5273356937502856", //long
+        "52.37737804091559", //lat
+      ],
+    },
+  },
+  //   {
+  //     type: "Feature",
+  //     properties: {
+  //       href: "",
+  //       // embedID: the embed ID of the YT stream
+  //       embedID: "",
+  //       description: "Location: ".concat(
+  //         "", //City
+  //         ", Netherlands"
+  //       ),
+  //       icon: "camera2",
+  //     },
+  //     geometry: {
+  //       type: "Point",
+  //       coordinates: [
+  //         "", //long
+  //         "", //lat
+  //       ],
+  //     },
+  //   },
+];
