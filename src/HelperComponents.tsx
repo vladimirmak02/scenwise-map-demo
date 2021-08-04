@@ -1,4 +1,3 @@
-import axios from "axios";
 import { Component, useState } from "react";
 import Chart from "react-apexcharts";
 import { privateApiKey } from "./Api";
@@ -208,55 +207,76 @@ export class BusyHoursDayChart extends Component<any, any> {
   }
 
   addLiveData() {
-    this.setState({ liveDataShown: true });
+    const that = this; // so that we can set the state inside the promise
+    that.setState({ liveDataShown: true });
     // get the live data
-    // console.log(this.props.venue_id);
 
-    // axios
-    //   .post(
-    //     "https://besttime.app/api/v1/forecast/live?venue_id=ven_6f383562306f4f6648745152636b784a636244596278494a496843",
-    //     {
-    //       venue_id: this.props.venue_id,
-    //       api_key_private: privateApiKey,
-    //     },
-    //     {
-    //       headers: {
-    //         "Access-Control-Allow-Origin": "*",
-    //         "Content-Type": "application/json",
-    //       },
-    //     }
-    //   )
-    //   .then((response) => {
-    //     console.log(response);
-    //   });
-    this.setState((prevSeries) => {
-      let newseries = prevSeries.series.map((series) => {
-        return {
-          ...series,
-          data: series.data.map((hour, index) => {
-            if (index === 2) {
-              //live hour
-              return {
-                ...hour,
-                goals: [
-                  {
-                    name: "Live",
-                    value: 50,
-                    strokeWidth: 5,
-                    strokeColor: "#f50057",
-                  },
-                ],
-              };
-            } else {
-              return {
-                ...hour,
-              };
-            }
-          }),
-        };
-      });
-      return { series: newseries };
+    const params = new URLSearchParams({
+      api_key_private: privateApiKey,
+      venue_id: this.props.venue_id,
     });
+
+    fetch(`https://besttime.app/api/v1/forecasts/live?${params}`, {
+      method: "POST",
+    }).then(function (data) {
+      data.json().then((response) => {
+        //   got the response
+        console.log(response.analysis);
+
+        if (response.analysis.venue_live_busyness_available) {
+          const livebusyness = response.analysis.venue_live_busyness;
+          const hourStart: number = response.analysis.hour_start;
+
+          that.setState((prevSeries) => {
+            let newseries = prevSeries.series.map((series) => {
+              return {
+                ...series,
+                data: series.data.map((hour, index) => {
+                  // console.log((hourStart - 6) % 24, index);
+                  if (index === (hourStart - 6) % 24) {
+                    // starts at 6 AM
+                    //live hour
+                    return {
+                      ...hour,
+                      goals: [
+                        {
+                          name: "Live",
+                          value: livebusyness,
+                          strokeWidth: 5,
+                          strokeColor: "#f50057",
+                        },
+                      ],
+                    };
+                  } else {
+                    return {
+                      ...hour,
+                    };
+                  }
+                }),
+              };
+            });
+            return { series: newseries };
+          });
+        } else {
+          // No live data available
+          that.setState((prevOptions) => {
+            let newOptions = {
+              ...prevOptions,
+              options: {
+                ...prevOptions.options,
+                legend: {
+                  ...prevOptions.options.legend,
+                  customLegendItems: ["Predicted", "Live - data not available"],
+                },
+              },
+            };
+            return newOptions;
+          });
+        }
+      });
+    });
+
+    console.log(that.state);
   }
 
   render() {

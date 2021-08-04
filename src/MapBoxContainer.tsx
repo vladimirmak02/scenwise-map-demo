@@ -166,7 +166,6 @@ export default function MapBoxContainer() {
         const curr = new Date();
         for (let i = 0; i < responses.length; i += 2) {
           const venue = responses[i].data;
-          const weekResponse = responses[i + 1].data;
           const week = responses[i + 1].data.analysis.week_raw;
 
           const currentDay = (curr.getDay() + 6) % 7;
