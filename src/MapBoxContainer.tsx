@@ -1,7 +1,7 @@
 import React, { useRef, useEffect } from "react";
 // @ts-ignore
 import mapboxgl from "!mapbox-gl"; // eslint-disable-line import/no-webpack-loader-syntax
-import axios from "./Api";
+import axios, { mapBoxAccessToken, publicApiKey, WindyApiKey } from "./Api";
 import "mapbox-gl/dist/mapbox-gl.css";
 import cameraSVG from "./videocamera.svg";
 import camera2SVG from "./videocamera2.svg";
@@ -14,8 +14,7 @@ import {
   youtubeWebcamInfo,
 } from "./HelperComponents";
 
-mapboxgl.accessToken =
-  "pk.eyJ1IjoidHVkdGltMjEiLCJhIjoiY2tvYWQwczczMTJ6NTJwbXUydmVvbXFsZCJ9.ixIsrkMIvzJuWoGSMTKZmw";
+mapboxgl.accessToken = mapBoxAccessToken;
 
 export default function MapBoxContainer() {
   const mapContainer = useRef(null);
@@ -151,7 +150,7 @@ export default function MapBoxContainer() {
               },
               params: {
                 show: "webcams:id,url,player,location,image",
-                key: "UhJq6YO7wyp9Tt2xnTJ3ox33X1ReJLdo",
+                key: WindyApiKey,
               },
             }
           )
@@ -183,6 +182,7 @@ export default function MapBoxContainer() {
               week: week,
               name: venue.venue_info.venue_name,
               lastUpdate: venue.forecast_updated_on,
+              venue_id: venue.venue_info.venue_id,
             },
             geometry: {
               type: "Point",
@@ -369,6 +369,7 @@ export default function MapBoxContainer() {
                     name: currentDay.day_info.day_text,
                   },
                 ]}
+                venue_id={content.venue_id}
               />
               <BusyHoursHeatmap series={series} />
 
@@ -399,7 +400,7 @@ export default function MapBoxContainer() {
       }
 
       //  GET THE BUSY DATA AND DISPLAY IT
-      const publicApiKey = "pub_3a97bf1ea1e94d1a84469a374246c712";
+
       //   The Venues to GET
       const venues = [
         "ven_6363675f444c496265437a52635578734c335a3451374b4a496843",

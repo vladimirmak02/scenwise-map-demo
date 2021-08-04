@@ -1,5 +1,7 @@
+import axios from "axios";
 import { Component, useState } from "react";
 import Chart from "react-apexcharts";
+import { privateApiKey } from "./Api";
 
 export const WindyWebcam = (props) => {
   const [isLoaded, setisLoaded] = useState(false);
@@ -130,6 +132,7 @@ export class BusyHoursHeatmap extends Component<any, any> {
         options={this.state.options}
         series={this.state.series}
         type="heatmap"
+        height="250"
       />
     );
   }
@@ -150,30 +153,30 @@ export class BusyHoursDayChart extends Component<any, any> {
         },
         xaxis: {
           categories: [
-            "6:00 AM",
-            "7:00 AM",
-            "8:00 AM",
-            "9:00 AM",
-            "10:00 AM",
-            "11:00 AM",
-            "12:00 PM",
-            "1:00 PM",
-            "2:00 PM",
-            "3:00 PM",
-            "4:00 PM",
-            "5:00 PM",
-            "6:00 PM",
-            "7:00 PM",
-            "8:00 PM",
-            "9:00 PM",
-            "10:00 PM",
-            "11:00 PM",
-            "00:00 AM",
-            "1:00 AM",
-            "2:00 AM",
-            "3:00 AM",
-            "4:00 AM",
-            "5:00 AM",
+            "6:00",
+            "7:00",
+            "8:00",
+            "9:00",
+            "10:00",
+            "11:00",
+            "12:00",
+            "13:00",
+            "14:00",
+            "15:00",
+            "16:00",
+            "17:00",
+            "18:00",
+            "19:00",
+            "20:00",
+            "21:00",
+            "22:00",
+            "23:00",
+            "00:00",
+            "1:00",
+            "2:00",
+            "3:00",
+            "4:00",
+            "5:00",
           ],
           tickPlacement: "on",
         },
@@ -202,14 +205,30 @@ export class BusyHoursDayChart extends Component<any, any> {
       },
       series: props.series,
     };
-    console.log(props.series);
   }
-
-  componentDidMount() {}
 
   addLiveData() {
     this.setState({ liveDataShown: true });
     // get the live data
+    // console.log(this.props.venue_id);
+
+    // axios
+    //   .post(
+    //     "https://besttime.app/api/v1/forecast/live?venue_id=ven_6f383562306f4f6648745152636b784a636244596278494a496843",
+    //     {
+    //       venue_id: this.props.venue_id,
+    //       api_key_private: privateApiKey,
+    //     },
+    //     {
+    //       headers: {
+    //         "Access-Control-Allow-Origin": "*",
+    //         "Content-Type": "application/json",
+    //       },
+    //     }
+    //   )
+    //   .then((response) => {
+    //     console.log(response);
+    //   });
     this.setState((prevSeries) => {
       let newseries = prevSeries.series.map((series) => {
         return {
@@ -236,20 +255,8 @@ export class BusyHoursDayChart extends Component<any, any> {
           }),
         };
       });
-      console.log(newseries);
-
-      //   }).data[1].goals = [
-      //     {
-      //       name: "Live",
-      //       value: 50,
-      //       strokeWidth: 5,
-      //       strokeColor: "#f50057",
-      //     },
-      //   ];
-
       return { series: newseries };
     });
-    // console.log(this.state.series);
   }
 
   render() {
@@ -259,7 +266,7 @@ export class BusyHoursDayChart extends Component<any, any> {
           options={this.state.options}
           series={this.state.series}
           type="bar"
-          height="300"
+          height="250"
         />
         {this.state.liveDataShown ? (
           ""

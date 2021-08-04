@@ -28,9 +28,14 @@ code {
 }
 
 .busyhourscontainer {
-  position: absolute;
+  /* position: absolute; */
   background-color: white;
-  height: 600px;
+  height: 550px;
   top: -20vh;
-  overflow: scroll;
+}
+
+/* This is for the 'padding' between squares on the heatmap*/
+.apexcharts-heatmap-rect {
+  stroke: white;
+  stroke-width: 2px;
 }
