@@ -2,7 +2,7 @@ import { Component, useState } from "react";
 import Chart from "react-apexcharts";
 import { privateApiKey } from "./Api";
 
-export const WindyWebcam = (props) => {
+export const WindyWebcam = (props: Webcam["properties"]) => {
   const [isLoaded, setisLoaded] = useState(false);
 
   return (
@@ -30,7 +30,7 @@ export const WindyWebcam = (props) => {
   );
 };
 
-export const YoutubeWebcamEmbed = (props) => {
+export const YoutubeWebcamEmbed = (props: Webcam["properties"]) => {
   const [isLoaded, setisLoaded] = useState(false);
 
   return (
@@ -39,7 +39,7 @@ export const YoutubeWebcamEmbed = (props) => {
         width={450}
         height={253}
         onLoad={() => setisLoaded(true)}
-        src={`https://www.youtube.com/embed/${props.embedId}?autoplay=1`}
+        src={`https://www.youtube.com/embed/${props.embedID}?autoplay=1`}
         frameBorder="0"
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
         allowFullScreen
@@ -61,7 +61,15 @@ export const YoutubeWebcamEmbed = (props) => {
 };
 
 export class BusyHoursHeatmap extends Component<any, any> {
-  constructor(props) {
+  constructor(props: {
+    series: {
+      name: string;
+      data: {
+        x: string;
+        y: number;
+      }[];
+    }[];
+  }) {
     super(props);
     this.state = {
       options: {
@@ -138,7 +146,9 @@ export class BusyHoursHeatmap extends Component<any, any> {
 }
 
 export class BusyHoursDayChart extends Component<any, any> {
-  constructor(props) {
+  constructor(props: {
+    series: { name: string; data: { x: number; y: number }[] }[];
+  }) {
     super(props);
     this.state = {
       liveDataShown: false,
@@ -221,45 +231,48 @@ export class BusyHoursDayChart extends Component<any, any> {
     }).then(function (data) {
       data.json().then((response) => {
         //   got the response
-        console.log(response.analysis);
 
         if (response.analysis.venue_live_busyness_available) {
           const livebusyness = response.analysis.venue_live_busyness;
           const hourStart: number = response.analysis.hour_start;
 
-          that.setState((prevSeries) => {
-            let newseries = prevSeries.series.map((series) => {
-              return {
-                ...series,
-                data: series.data.map((hour, index) => {
-                  // console.log((hourStart - 6) % 24, index);
-                  if (index === (hourStart - 6) % 24) {
-                    // starts at 6 AM
-                    //live hour
-                    return {
-                      ...hour,
-                      goals: [
-                        {
-                          name: "Live",
-                          value: livebusyness,
-                          strokeWidth: 5,
-                          strokeColor: "#f50057",
-                        },
-                      ],
-                    };
-                  } else {
-                    return {
-                      ...hour,
-                    };
-                  }
-                }),
-              };
-            });
-            return { series: newseries };
-          });
+          that.setState(
+            (prevSeries: {
+              series: { name: string; data: { x: number; y: number }[] }[];
+            }) => {
+              let newseries = prevSeries.series.map((series) => {
+                return {
+                  ...series,
+                  data: series.data.map((hour, index) => {
+                    // console.log((hourStart - 6) % 24, index);
+                    if (index === (hourStart - 6) % 24) {
+                      // starts at 6 AM
+                      //live hour
+                      return {
+                        ...hour,
+                        goals: [
+                          {
+                            name: "Live",
+                            value: livebusyness,
+                            strokeWidth: 5,
+                            strokeColor: "#f50057",
+                          },
+                        ],
+                      };
+                    } else {
+                      return {
+                        ...hour,
+                      };
+                    }
+                  }),
+                };
+              });
+              return { series: newseries };
+            }
+          );
         } else {
           // No live data available
-          that.setState((prevOptions) => {
+          that.setState((prevOptions: { options: { legend: any } }) => {
             let newOptions = {
               ...prevOptions,
               options: {
@@ -275,8 +288,6 @@ export class BusyHoursDayChart extends Component<any, any> {
         }
       });
     });
-
-    console.log(that.state);
   }
 
   render() {
@@ -300,7 +311,46 @@ export class BusyHoursDayChart extends Component<any, any> {
   }
 }
 
-export const youtubeWebcamInfo = [
+export type Webcam = {
+  type: "Feature";
+  properties: {
+    href: string;
+    src?: string;
+    embedID?: string;
+    description: string;
+    icon?: string;
+  };
+  geometry: {
+    type: "Point";
+    coordinates: [number | string, number | string];
+  };
+};
+
+export type PopularTimesFeature = {
+  type: "Feature";
+  properties: {
+    busy: number;
+    week:
+      | [
+          {
+            day_raw: number[];
+            day_info: {
+              day_text: string;
+            };
+          }
+        ]
+      | string;
+    name: string;
+    lastUpdate: string;
+    venue_id: string;
+  };
+  geometry: {
+    type: "Point";
+    coordinates: [number, number];
+  };
+};
+
+export const youtubeWebcamInfo: Webcam[] = [
   {
     type: "Feature",
     properties: {

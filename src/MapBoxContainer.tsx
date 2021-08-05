@@ -9,6 +9,8 @@ import ReactDOM from "react-dom";
 import {
   BusyHoursDayChart,
   BusyHoursHeatmap,
+  PopularTimesFeature,
+  Webcam,
   WindyWebcam,
   YoutubeWebcamEmbed,
   youtubeWebcamInfo,
@@ -17,8 +19,8 @@ import {
 mapboxgl.accessToken = mapBoxAccessToken;
 
 export default function MapBoxContainer() {
-  const mapContainer = useRef(null);
-  const mapElement = useRef(null);
+  const mapContainer = useRef<HTMLDivElement>(null);
+  const mapElement = useRef<mapboxgl.Map>(null);
 
   useEffect(() => {
     if (mapElement.current) return; // initialize map only once
@@ -43,7 +45,32 @@ export default function MapBoxContainer() {
       };
       img2.src = camera2SVG;
 
-      function renderMapWebcams(response) {
+      function renderMapWebcams(response: {
+        data: {
+          result: {
+            webcams: [
+              {
+                url: {
+                  current: {
+                    desktop: string;
+                  };
+                };
+                player: {
+                  day: {
+                    embed: string;
+                  };
+                };
+                location: {
+                  city: string;
+                  country: string;
+                  longitude: string;
+                  latitude: string;
+                };
+              }
+            ];
+          };
+        };
+      }) {
         map.addSource("places", {
           // This GeoJSON contains features that include an "icon"
           // property. The value of the "icon" property corresponds
@@ -52,7 +79,7 @@ export default function MapBoxContainer() {
           data: {
             type: "FeatureCollection",
             features: response.data.result.webcams
-              .map((webcam) => {
+              .map((webcam): Webcam => {
                 return {
                   type: "Feature",
                   properties: {
@@ -89,40 +116,52 @@ export default function MapBoxContainer() {
           },
         });
 
-        map.on("click", "places", function (e) {
-          var coordinates = e.features[0].geometry.coordinates.slice();
-          var content = e.features[0].properties;
+        map.on(
+          "click",
+          "places",
+          function (e: {
+            features: [Webcam];
+            lngLat: {
+              lng: number;
+              lat: number;
+            };
+          }) {
+            const coordinates: number[] = e.features[0].geometry.coordinates
+              .slice()
+              .map((coord) => +coord);
+            const content = e.features[0].properties;
 
-          // Ensure that if the map is zoomed out such that multiple
-          // copies of the feature are visible, the popup appears
-          // over the copy being pointed to.
-          while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
-            coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
+            // Ensure that if the map is zoomed out such that multiple
+            // copies of the feature are visible, the popup appears
+            // over the copy being pointed to.
+            while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
+              coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
+            }
+
+            const holder = document.createElement("div");
+            ReactDOM.render(
+              content.embedID ? (
+                <YoutubeWebcamEmbed
+                  embedID={content.embedID}
+                  href={content.href}
+                  description={content.description}
+                />
+              ) : (
+                <WindyWebcam
+                  href={content.href}
+                  src={content.src}
+                  description={content.description}
+                />
+              ),
+              holder
+            );
+
+            new mapboxgl.Popup()
+              .setLngLat(coordinates)
+              .setDOMContent(holder)
+              .addTo(map);
           }
-
-          const holder = document.createElement("div");
-          ReactDOM.render(
-            content.embedID ? (
-              <YoutubeWebcamEmbed
-                embedId={content.embedID}
-                href={content.href}
-                description={content.description}
-              />
-            ) : (
-              <WindyWebcam
-                href={content.href}
-                src={content.src}
-                description={content.description}
-              />
-            ),
-            holder
-          );
-
-          new mapboxgl.Popup()
-            .setLngLat(coordinates)
-            .setDOMContent(holder)
-            .addTo(map);
-        });
+        );
 
         // Change the cursor to a pointer when the mouse is over the places layer.
         map.on("mouseenter", "places", function () {
@@ -161,8 +200,32 @@ export default function MapBoxContainer() {
           .catch(console.log);
       }
 
-      function renderMapBusy(responses) {
-        let features = [];
+      function renderMapBusy(
+        responses: [
+          {
+            data: {
+              analysis: {
+                week_raw: [
+                  {
+                    day_raw: number[];
+                    day_info: {
+                      day_text: string;
+                    };
+                  }
+                ];
+              };
+              venue_info: {
+                venue_name: string;
+                venue_id: string;
+                venue_lng: number;
+                venue_lat: number;
+              };
+              forecast_updated_on: string;
+            };
+          }
+        ]
+      ) {
+        let features: PopularTimesFeature[] = [];
         const curr = new Date();
         for (let i = 0; i < responses.length; i += 2) {
           const venue = responses[i].data;
@@ -325,67 +388,87 @@ export default function MapBoxContainer() {
           "busyhours-heat"
         );
 
-        map.on("click", "busyhours-point", function (e) {
-          var coordinates = e.features[0].geometry.coordinates.slice();
-          var content = e.features[0].properties;
-          const week: [any] = JSON.parse(content.week);
-          let hourcount = 0;
-          const currentDay = week[(curr.getDay() + 6) % 7];
-          const series = week.map((day) => {
-            return {
-              name: day.day_info.day_text,
-              data: day.day_raw.map((hour) => {
-                hourcount++;
-                return {
-                  x: ((hourcount + 5) % 24) + ":00",
-                  y: hour,
-                };
-              }),
+        map.on(
+          "click",
+          "busyhours-point",
+          function (e: {
+            features: [PopularTimesFeature];
+            lngLat: {
+              lng: number;
+              lat: number;
             };
-          });
-
-          // Ensure that if the map is zoomed out such that multiple
-          // copies of the feature are visible, the popup appears
-          // over the copy being pointed to.
-          while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
-            coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
-          }
-
-          const holder = document.createElement("div");
-          holder.className = "busyhourscontainer";
-          ReactDOM.render(
-            <div style={{ width: 600, height: 300, maxHeight: 800 }}>
-              <h4>{"Location: " + content.name}</h4>
-              <BusyHoursDayChart
-                series={[
-                  {
-                    data: currentDay.day_raw.map((hour: number, index) => {
-                      return {
-                        x: index + 1,
-                        y: hour,
-                      };
-                    }),
-                    name: currentDay.day_info.day_text,
-                  },
-                ]}
-                venue_id={content.venue_id}
-              />
-              <BusyHoursHeatmap series={series} />
-
-              {/* <p>{"Last updated on: " + content.lastUpdate}</p> */}
-            </div>,
-            holder,
-            () => {
-              // This is a hotfix for the apexcharts misbehaving and frawing very badly
-              window.dispatchEvent(new Event("resize"));
+          }) {
+            var coordinates = e.features[0].geometry.coordinates.slice();
+            var content = e.features[0].properties;
+            if (typeof content.week == "string") {
+              content.week = JSON.parse(content.week);
             }
-          );
+            let week = content.week as [
+              {
+                day_raw: number[];
+                day_info: {
+                  day_text: string;
+                };
+              }
+            ];
+            let hourcount = 0;
+            const currentDay = week[(curr.getDay() + 6) % 7];
+            const series = week.map((day) => {
+              return {
+                name: day.day_info.day_text,
+                data: day.day_raw.map((hour) => {
+                  hourcount++;
+                  return {
+                    x: ((hourcount + 5) % 24) + ":00",
+                    y: hour,
+                  };
+                }),
+              };
+            });
 
-          new mapboxgl.Popup()
-            .setLngLat(coordinates)
-            .setDOMContent(holder)
-            .addTo(map);
-        });
+            // Ensure that if the map is zoomed out such that multiple
+            // copies of the feature are visible, the popup appears
+            // over the copy being pointed to.
+            while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
+              coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
+            }
+
+            const holder = document.createElement("div");
+            holder.className = "busyhourscontainer";
+            ReactDOM.render(
+              <div style={{ width: 600, height: 300, maxHeight: 800 }}>
+                <h4>{"Location: " + content.name}</h4>
+                <BusyHoursDayChart
+                  series={[
+                    {
+                      data: currentDay.day_raw.map((hour: number, index) => {
+                        return {
+                          x: index + 1,
+                          y: hour,
+                        };
+                      }),
+                      name: currentDay.day_info.day_text,
+                    },
+                  ]}
+                  venue_id={content.venue_id}
+                />
+                <BusyHoursHeatmap series={series} />
+
+                {/* <p>{"Last updated on: " + content.lastUpdate}</p> */}
+              </div>,
+              holder,
+              () => {
+                // This is a hotfix for the apexcharts misbehaving and frawing very badly
+                window.dispatchEvent(new Event("resize"));
+              }
+            );
+
+            new mapboxgl.Popup()
+              .setLngLat(coordinates)
+              .setDOMContent(holder)
+              .addTo(map);
+          }
+        );
 
         // Change the cursor to a pointer when the mouse is over the places layer.
         map.on("mouseenter", "busyhours-point", function () {
@@ -407,13 +490,14 @@ export default function MapBoxContainer() {
         "ven_6f3639495271654b717749526355787348426d505259424a496843",
         "ven_494d4b6f34612d3856734752636b784a38756c547231584a496843",
       ];
-      let venueRequests = [];
+
       const circleZoomLevel = 12;
 
       const venueResponses = localStorage.getItem("venues");
       if (venueResponses) {
         renderMapBusy(JSON.parse(venueResponses));
       } else {
+        let venueRequests: any[] = [];
         //   Make Requests
         venues.forEach((venue) => {
           venueRequests.push(
@@ -433,8 +517,10 @@ export default function MapBoxContainer() {
         Promise.all(venueRequests)
           .then(function (responses) {
             localStorage.setItem("venues", JSON.stringify(responses));
-
-            renderMapBusy(responses);
+            if (responses.length > 0) {
+              //@ts-ignore I can't figure out why it still gives me an error of there being a possibility that nothing is in the array.
+              renderMapBusy(responses);
+            }
           })
           .catch(console.log);
       }
