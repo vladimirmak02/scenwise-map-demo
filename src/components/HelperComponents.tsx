@@ -233,7 +233,10 @@ export class BusyHoursDayChart extends Component<any, any> {
       data.json().then((response) => {
         //   got the response
 
-        if (response.analysis.venue_live_busyness_available) {
+        if (
+          response.analysis &&
+          response.analysis.venue_live_busyness_available
+        ) {
           const livebusyness = response.analysis.venue_live_busyness;
           const hourStart: number = response.analysis.hour_start;
 
