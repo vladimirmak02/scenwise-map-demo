@@ -1,0 +1,9 @@
+{
+    "id": "webcams",
+    "type": "symbol",
+    "source": "webcams",
+    "layout": {
+      "icon-image": "{icon}",
+      "icon-allow-overlap": true
+    }
+  }

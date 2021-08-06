@@ -1,3 +1,4 @@
+import { AxiosResponse } from "axios";
 import { Component, useState } from "react";
 import Chart from "react-apexcharts";
 import { privateApiKey } from "../Api";
@@ -349,6 +350,55 @@ export type PopularTimesFeature = {
     coordinates: [number, number];
   };
 };
+
+export interface PopularTimesResponse extends AxiosResponse {
+  data: {
+    analysis: {
+      week_raw: [
+        {
+          day_raw: number[];
+          day_info: {
+            day_text: string;
+          };
+        }
+      ];
+    };
+    venue_info: {
+      venue_name: string;
+      venue_id: string;
+      venue_lng: number;
+      venue_lat: number;
+    };
+    forecast_updated_on: string;
+  };
+}
+
+export interface WebcamsResponse extends AxiosResponse {
+  data: {
+    result: {
+      webcams: [
+        {
+          url: {
+            current: {
+              desktop: string;
+            };
+          };
+          player: {
+            day: {
+              embed: string;
+            };
+          };
+          location: {
+            city: string;
+            country: string;
+            longitude: string;
+            latitude: string;
+          };
+        }
+      ];
+    };
+  };
+}
 
 export const youtubeWebcamInfo: Webcam[] = [
   {

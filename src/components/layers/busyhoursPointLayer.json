@@ -1,0 +1,84 @@
+{
+    "id": "busyhours-point",
+    "type": "circle",
+    "source": "busyhours",
+    "minzoom": 12,
+    "paint": {
+      "circle-radius": [
+        "interpolate",
+        [
+          "linear"
+        ],
+        [
+          "zoom"
+        ],
+        7,
+        [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "get",
+            "busy"
+          ],
+          1,
+          1,
+          100,
+          4
+        ],
+        16,
+        [
+          "interpolate",
+          [
+            "linear"
+          ],
+          [
+            "get",
+            "busy"
+          ],
+          1,
+          5,
+          100,
+          50
+        ]
+      ],
+      "circle-color": [
+        "interpolate",
+        [
+          "linear"
+        ],
+        [
+          "get",
+          "busy"
+        ],
+        10,
+        "rgba(33,102,172,0)",
+        30,
+        "rgb(103,169,207)",
+        50,
+        "rgb(209,229,240)",
+        70,
+        "rgb(253,219,199)",
+        80,
+        "rgb(239,138,98)",
+        100,
+        "rgb(178,24,43)"
+      ],
+      "circle-stroke-color": "white",
+      "circle-stroke-width": 1,
+      "circle-opacity": [
+        "interpolate",
+        [
+          "linear"
+        ],
+        [
+          "zoom"
+        ],
+        12,
+        0,
+        13,
+        1
+      ]
+    }
+  }

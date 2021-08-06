@@ -5,12 +5,17 @@ import axios, { mapBoxAccessToken, publicApiKey, WindyApiKey } from "../Api";
 import "mapbox-gl/dist/mapbox-gl.css";
 import cameraSVG from "../images/videocamera.svg";
 import camera2SVG from "../images/videocamera2.svg";
+import webcamsLayer from "./layers/webcamsLayer.json";
+import busyhoursHeatmapLayer from "./layers/busyhoursHeatmapLayer.json";
+import busyhoursPointLayer from "./layers/busyhoursPointLayer.json";
 import {
   PopularTimesFeature,
+  PopularTimesResponse,
   Webcam,
+  WebcamsResponse,
   youtubeWebcamInfo,
 } from "./HelperComponents";
-import { addPopularTimesPopup } from "./MapPopupFunctions";
+import { addPopularTimesPopup, addWebcamPopup } from "./MapPopupFunctions";
 
 mapboxgl.accessToken = mapBoxAccessToken;
 
@@ -19,6 +24,7 @@ export default function MapBoxContainer() {
   const mapElement = useRef<mapboxgl.Map>(null);
 
   useEffect(() => {
+    // When the map element loads
     if (mapElement.current) return; // initialize map only once
     let map = mapElement.current;
     map = new mapboxgl.Map({
@@ -29,6 +35,7 @@ export default function MapBoxContainer() {
     });
 
     map.on("load", () => {
+      // When the map itself loads
       let img = new Image(20, 20); //Camera Purple
       img.onload = () => {
         map.addImage("camera", img);
@@ -41,36 +48,13 @@ export default function MapBoxContainer() {
       };
       img2.src = camera2SVG;
 
-      function renderMapWebcams(response: {
-        data: {
-          result: {
-            webcams: [
-              {
-                url: {
-                  current: {
-                    desktop: string;
-                  };
-                };
-                player: {
-                  day: {
-                    embed: string;
-                  };
-                };
-                location: {
-                  city: string;
-                  country: string;
-                  longitude: string;
-                  latitude: string;
-                };
-              }
-            ];
-          };
-        };
-      }) {
+      /**
+       * Adds sources of webcams to the map, adds the webcam layer and Popup
+       * This is encapsulated into a function because it doesn't need to be called if the info is already stored in localStorage
+       * @param response The response from Windy's API
+       */
+      function renderMapWebcams(response: WebcamsResponse) {
         map.addSource("webcams", {
-          // This GeoJSON contains features that include an "icon"
-          // property. The value of the "icon" property corresponds
-          // to an image in the Mapbox Streets style's sprite.
           type: "geojson",
           data: {
             type: "FeatureCollection",
@@ -80,8 +64,7 @@ export default function MapBoxContainer() {
                   type: "Feature",
                   properties: {
                     href: webcam.url.current.desktop,
-                    // src: webcam.image.current.thumbnail,
-                    src: webcam.player.day.embed,
+                    src: webcam.player.day.embed, // Windy webcam src
                     description: "Location: ".concat(
                       webcam.location.city,
                       ", ",
@@ -98,21 +81,13 @@ export default function MapBoxContainer() {
                   },
                 };
               })
-              .concat(youtubeWebcamInfo),
+              .concat(youtubeWebcamInfo), // Adds the youtube webcams from another file
           },
         });
 
-        map.addLayer({
-          id: "webcams",
-          type: "symbol",
-          source: "webcams",
-          layout: {
-            "icon-image": "{icon}",
-            "icon-allow-overlap": true,
-          },
-        });
+        map.addLayer(webcamsLayer);
 
-        addPopularTimesPopup(map);
+        addWebcamPopup(map);
       }
 
       //   GET THE WEBCAMS AND DISPLAY THEM, WHILE SAVING ON INTERNET TRAFFIC
@@ -134,38 +109,18 @@ export default function MapBoxContainer() {
               },
             }
           )
-          .then(function (response) {
+          .then(function (response: WebcamsResponse) {
             localStorage.setItem("webcams", JSON.stringify(response));
             renderMapWebcams(response);
           })
           .catch(console.log);
       }
 
-      function renderMapBusy(
-        responses: [
-          {
-            data: {
-              analysis: {
-                week_raw: [
-                  {
-                    day_raw: number[];
-                    day_info: {
-                      day_text: string;
-                    };
-                  }
-                ];
-              };
-              venue_info: {
-                venue_name: string;
-                venue_id: string;
-                venue_lng: number;
-                venue_lat: number;
-              };
-              forecast_updated_on: string;
-            };
-          }
-        ]
-      ) {
+      /**
+       * Processes responses from Besttime API, adds features, sources to the map, sets up the 2 layers and Popup
+       * @param responses An array of responses from the besttime.app API, with Even indexes being Venue information (0,2,4, ...) and odd being the week's forecast (1,3,5, ...)
+       */
+      function renderMapBusy(responses: PopularTimesResponse[]) {
         let features: PopularTimesFeature[] = [];
         const curr = new Date();
         for (let i = 0; i < responses.length; i += 2) {
@@ -204,130 +159,9 @@ export default function MapBoxContainer() {
           },
         });
 
-        map.addLayer(
-          {
-            id: "busyhours-heat",
-            type: "heatmap",
-            source: "busyhours",
-            maxzoom: circleZoomLevel + 1,
-            paint: {
-              // Increase the heatmap weight based on frequency and property magnitude
-              "heatmap-weight": [
-                "interpolate",
-                ["linear"],
-                ["get", "busy"],
-                0,
-                0,
-                100,
-                1,
-              ],
-              // Increase the heatmap color weight weight by zoom level
-              // heatmap-intensity is a multiplier on top of heatmap-weight
-              "heatmap-intensity": [
-                "interpolate",
-                ["linear"],
-                ["zoom"],
-                0,
-                1,
-                circleZoomLevel + 1,
-                3,
-              ],
-              // Color ramp for heatmap.  Domain is 0 (low) to 1 (high).
-              // Begin color ramp at 0-stop with a 0-transparancy color
-              // to create a blur-like effect.
-              //   "heatmap-color": [
-              //     "interpolate",
-              //     ["linear"],
-              //     ["heatmap-density"],
-              //     0,
-              //     "rgba(33,102,172,0)",
-              //     0.2,
-              //     "rgb(103,169,207)",
-              //     0.4,
-              //     "rgb(209,229,240)",
-              //     0.6,
-              //     "rgb(253,219,199)",
-              //     0.8,
-              //     "rgb(239,138,98)",
-              //     1,
-              //     "rgb(178,24,43)",
-              //   ],
-              // Adjust the heatmap radius by zoom level
-              "heatmap-radius": [
-                "interpolate",
-                ["linear"],
-                ["zoom"],
-                0,
-                2,
-                circleZoomLevel,
-                20,
-              ],
-              // Transition from heatmap to circle layer by zoom level
-              "heatmap-opacity": [
-                "interpolate",
-                ["linear"],
-                ["zoom"],
-                circleZoomLevel,
-                1,
-                circleZoomLevel + 1,
-                0,
-              ],
-            },
-          },
-          "webcams"
-        );
+        map.addLayer(busyhoursHeatmapLayer, "webcams");
 
-        map.addLayer(
-          {
-            id: "busyhours-point",
-            type: "circle",
-            source: "busyhours",
-            minzoom: circleZoomLevel,
-            paint: {
-              // Size circle radius by earthquake magnitude and zoom level
-              "circle-radius": [
-                "interpolate",
-                ["linear"],
-                ["zoom"],
-                7,
-                ["interpolate", ["linear"], ["get", "busy"], 1, 1, 100, 4],
-                16,
-                ["interpolate", ["linear"], ["get", "busy"], 1, 5, 100, 50],
-              ],
-              // Color circle by earthquake magnitude
-              "circle-color": [
-                "interpolate",
-                ["linear"],
-                ["get", "busy"],
-                10,
-                "rgba(33,102,172,0)",
-                30,
-                "rgb(103,169,207)",
-                50,
-                "rgb(209,229,240)",
-                70,
-                "rgb(253,219,199)",
-                80,
-                "rgb(239,138,98)",
-                100,
-                "rgb(178,24,43)",
-              ],
-              "circle-stroke-color": "white",
-              "circle-stroke-width": 1,
-              // Transition from heatmap to circle layer by zoom level
-              "circle-opacity": [
-                "interpolate",
-                ["linear"],
-                ["zoom"],
-                circleZoomLevel,
-                0,
-                circleZoomLevel + 1,
-                1,
-              ],
-            },
-          },
-          "busyhours-heat"
-        );
+        map.addLayer(busyhoursPointLayer, "busyhours-heat");
 
         addPopularTimesPopup(map);
       }
@@ -341,8 +175,6 @@ export default function MapBoxContainer() {
         "ven_6f3639495271654b717749526355787348426d505259424a496843",
         "ven_494d4b6f34612d3856734752636b784a38756c547231584a496843",
       ];
-
-      const circleZoomLevel = 12;
 
       const venueResponses = localStorage.getItem("venues");
       if (venueResponses) {
@@ -366,12 +198,9 @@ export default function MapBoxContainer() {
           );
         });
         Promise.all(venueRequests)
-          .then(function (responses) {
+          .then(function (responses: PopularTimesResponse[]) {
             localStorage.setItem("venues", JSON.stringify(responses));
-            if (responses.length > 0) {
-              //@ts-ignore I can't figure out why it still gives me an error of there being a possibility that nothing is in the array.
-              renderMapBusy(responses);
-            }
+            renderMapBusy(responses);
           })
           .catch(console.log);
       }
