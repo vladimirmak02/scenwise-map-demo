@@ -1,6 +1,6 @@
 import { Component, useState } from "react";
 import Chart from "react-apexcharts";
-import { privateApiKey } from "./Api";
+import { privateApiKey } from "../Api";
 
 export const WindyWebcam = (props: Webcam["properties"]) => {
   const [isLoaded, setisLoaded] = useState(false);

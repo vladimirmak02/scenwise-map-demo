@@ -1,6 +1,6 @@
 import React from "react";
 import "./App.css";
-import MapBoxContainer from "./MapBoxContainer";
+import MapBoxContainer from "./components/MapBoxContainer";
 
 function App() {
   return (

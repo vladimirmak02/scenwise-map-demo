@@ -1,20 +1,16 @@
 import React, { useRef, useEffect } from "react";
 // @ts-ignore
 import mapboxgl from "!mapbox-gl"; // eslint-disable-line import/no-webpack-loader-syntax
-import axios, { mapBoxAccessToken, publicApiKey, WindyApiKey } from "./Api";
+import axios, { mapBoxAccessToken, publicApiKey, WindyApiKey } from "../Api";
 import "mapbox-gl/dist/mapbox-gl.css";
-import cameraSVG from "./videocamera.svg";
-import camera2SVG from "./videocamera2.svg";
-import ReactDOM from "react-dom";
+import cameraSVG from "../images/videocamera.svg";
+import camera2SVG from "../images/videocamera2.svg";
 import {
-  BusyHoursDayChart,
-  BusyHoursHeatmap,
   PopularTimesFeature,
   Webcam,
-  WindyWebcam,
-  YoutubeWebcamEmbed,
   youtubeWebcamInfo,
 } from "./HelperComponents";
+import { addPopularTimesPopup } from "./MapPopupFunctions";
 
 mapboxgl.accessToken = mapBoxAccessToken;
 
@@ -71,7 +67,7 @@ export default function MapBoxContainer() {
           };
         };
       }) {
-        map.addSource("places", {
+        map.addSource("webcams", {
           // This GeoJSON contains features that include an "icon"
           // property. The value of the "icon" property corresponds
           // to an image in the Mapbox Streets style's sprite.
@@ -107,71 +103,16 @@ export default function MapBoxContainer() {
         });
 
         map.addLayer({
-          id: "places",
+          id: "webcams",
           type: "symbol",
-          source: "places",
+          source: "webcams",
           layout: {
             "icon-image": "{icon}",
             "icon-allow-overlap": true,
           },
         });
 
-        map.on(
-          "click",
-          "places",
-          function (e: {
-            features: [Webcam];
-            lngLat: {
-              lng: number;
-              lat: number;
-            };
-          }) {
-            const coordinates: number[] = e.features[0].geometry.coordinates
-              .slice()
-              .map((coord) => +coord);
-            const content = e.features[0].properties;
-
-            // Ensure that if the map is zoomed out such that multiple
-            // copies of the feature are visible, the popup appears
-            // over the copy being pointed to.
-            while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
-              coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
-            }
-
-            const holder = document.createElement("div");
-            ReactDOM.render(
-              content.embedID ? (
-                <YoutubeWebcamEmbed
-                  embedID={content.embedID}
-                  href={content.href}
-                  description={content.description}
-                />
-              ) : (
-                <WindyWebcam
-                  href={content.href}
-                  src={content.src}
-                  description={content.description}
-                />
-              ),
-              holder
-            );
-
-            new mapboxgl.Popup()
-              .setLngLat(coordinates)
-              .setDOMContent(holder)
-              .addTo(map);
-          }
-        );
-
-        // Change the cursor to a pointer when the mouse is over the places layer.
-        map.on("mouseenter", "places", function () {
-          map.getCanvas().style.cursor = "pointer";
-        });
-
-        // Change it back to a pointer when it leaves.
-        map.on("mouseleave", "places", function () {
-          map.getCanvas().style.cursor = "";
-        });
+        addPopularTimesPopup(map);
       }
 
       //   GET THE WEBCAMS AND DISPLAY THEM, WHILE SAVING ON INTERNET TRAFFIC
@@ -333,7 +274,7 @@ export default function MapBoxContainer() {
               ],
             },
           },
-          "places"
+          "webcams"
         );
 
         map.addLayer(
@@ -388,97 +329,7 @@ export default function MapBoxContainer() {
           "busyhours-heat"
         );
 
-        map.on(
-          "click",
-          "busyhours-point",
-          function (e: {
-            features: [PopularTimesFeature];
-            lngLat: {
-              lng: number;
-              lat: number;
-            };
-          }) {
-            var coordinates = e.features[0].geometry.coordinates.slice();
-            var content = e.features[0].properties;
-            if (typeof content.week == "string") {
-              content.week = JSON.parse(content.week);
-            }
-            let week = content.week as [
-              {
-                day_raw: number[];
-                day_info: {
-                  day_text: string;
-                };
-              }
-            ];
-            let hourcount = 0;
-            const currentDay = week[(curr.getDay() + 6) % 7];
-            const series = week.map((day) => {
-              return {
-                name: day.day_info.day_text,
-                data: day.day_raw.map((hour) => {
-                  hourcount++;
-                  return {
-                    x: ((hourcount + 5) % 24) + ":00",
-                    y: hour,
-                  };
-                }),
-              };
-            });
-
-            // Ensure that if the map is zoomed out such that multiple
-            // copies of the feature are visible, the popup appears
-            // over the copy being pointed to.
-            while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
-              coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
-            }
-
-            const holder = document.createElement("div");
-            holder.className = "busyhourscontainer";
-            ReactDOM.render(
-              <div style={{ width: 600, height: 300, maxHeight: 800 }}>
-                <h4>{"Location: " + content.name}</h4>
-                <BusyHoursDayChart
-                  series={[
-                    {
-                      data: currentDay.day_raw.map((hour: number, index) => {
-                        return {
-                          x: index + 1,
-                          y: hour,
-                        };
-                      }),
-                      name: currentDay.day_info.day_text,
-                    },
-                  ]}
-                  venue_id={content.venue_id}
-                />
-                <BusyHoursHeatmap series={series} />
-
-                {/* <p>{"Last updated on: " + content.lastUpdate}</p> */}
-              </div>,
-              holder,
-              () => {
-                // This is a hotfix for the apexcharts misbehaving and frawing very badly
-                window.dispatchEvent(new Event("resize"));
-              }
-            );
-
-            new mapboxgl.Popup()
-              .setLngLat(coordinates)
-              .setDOMContent(holder)
-              .addTo(map);
-          }
-        );
-
-        // Change the cursor to a pointer when the mouse is over the places layer.
-        map.on("mouseenter", "busyhours-point", function () {
-          map.getCanvas().style.cursor = "pointer";
-        });
-
-        // Change it back to a pointer when it leaves.
-        map.on("mouseleave", "busyhours-point", function () {
-          map.getCanvas().style.cursor = "";
-        });
+        addPopularTimesPopup(map);
       }
 
       //  GET THE BUSY DATA AND DISPLAY IT
